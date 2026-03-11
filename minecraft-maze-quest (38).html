@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAZE QUIZCHART</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+  * { image-rendering: pixelated; box-sizing: border-box; font-family: 'VT323', monospace; }
+  body { margin: 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+  :root {
+    --dirt: #8B6343;
+    --grass: #5D8A3C;
+    --stone: #8A8A8A;
+    --wood: #A0522D;
+    --sky: #7EC8E3;
+    --night: #1a1a2e;
+    --emerald: #50C878;
+    --gold: #FFD700;
+    --redstone: #CC0000;
+    --diamond: #00BFFF;
+    --obsidian: #1a0a2e;
+    --creeper: #4CAF50;
+  }
+  @keyframes pixelFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  @media (max-width: 480px) {
+    .mc-font { font-size: 18px !important; }
+    .mc-font-sm { font-size: 16px !important; }
+    .mc-btn { padding: 8px 16px !important; font-size: 18px !important; }
+    .choice-btn { font-size: 17px !important; padding: 8px 10px !important; }
+    .flow-step, .flow-slot { font-size: 16px !important; padding: 6px 8px !important; min-height: 36px !important; }
+  }
+  @keyframes pixelShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-4px)} 40%{transform:translateX(4px)} 60%{transform:translateX(-2px)} 80%{transform:translateX(2px)} }
+  @keyframes pixelPop { 0%{transform:scale(0);opacity:0} 60%{transform:scale(1.2)} 100%{transform:scale(1);opacity:1} }
+  @keyframes blockBreak { 0%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8) rotate(10deg)} 100%{opacity:0;transform:scale(0)} }
+  @keyframes torchFlicker { 0%,100%{opacity:1} 50%{opacity:0.7} 75%{opacity:0.9} }
+  @keyframes starTwinkle { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.5)} }
+  .mc-font { font-family: 'VT323', monospace; font-size: 28px; }
+  .mc-font-sm { font-family: 'VT323', monospace; }
+  .pixel-float { animation: pixelFloat 2s ease-in-out infinite; }
+  .pixel-shake { animation: pixelShake 0.4s ease; }
+  .pixel-pop { animation: pixelPop 0.3s ease forwards; }
+  .torch { animation: torchFlicker 0.8s ease-in-out infinite; }
+
+  .mc-btn { font-family: 'VT323', monospace; font-size: 22px; padding: 8px 20px; border: none; cursor: pointer; position: relative; transition: transform 0.1s; letter-spacing: 1px; }
+  .mc-btn:active { transform: translateY(2px); }
+  .mc-btn-green { background: #5D8A3C; color: #fff; border-bottom: 4px solid #3a5a20; box-shadow: inset 0 1px 0 #7ab050; }
+  .mc-btn-green:hover { background: #6aaa45; }
+  .mc-btn-red { background: #AA3333; color: #fff; border-bottom: 4px solid #771111; box-shadow: inset 0 1px 0 #cc5555; }
+  .mc-btn-red:hover { background: #cc4444; }
+  .mc-btn-blue { background: #3355AA; color: #fff; border-bottom: 4px solid #112277; box-shadow: inset 0 1px 0 #5577cc; }
+  .mc-btn-blue:hover { background: #4466bb; }
+  .mc-btn-gold { background: #AA8800; color: #fff; border-bottom: 4px solid #775500; box-shadow: inset 0 1px 0 #ccaa22; }
+  .mc-btn-gold:hover { background: #bbaa00; }
+
+  .inv-slot { width: 40px; height: 40px; background: #8B8B8B; border: 2px solid #373737; border-top-color: #fff; border-left-color: #fff; display:flex;align-items:center;justify-content:center; font-size:18px; position:relative; cursor:default; }
+  .inv-slot.active { background: #9F9F9F; outline: 2px solid #fff; }
+  .hotbar { background: #8B8B8B; border: 3px solid #373737; border-top-color: #fff; border-left-color: #fff; padding: 4px; display:flex;gap:4px; }
+  .health-icon { width: 16px; height: 16px; display:inline-block; }
+
+  .choice-btn { font-family: 'VT323', monospace; font-size: 20px; padding: 8px 12px; border: 3px solid #373737; border-bottom-color: #fff; border-right-color: #fff; cursor: pointer; transition: all 0.1s; text-align:left; width:100%; }
+  .choice-btn:hover { filter: brightness(1.2); transform: translateX(2px); }
+  .choice-btn-default { background: #C6C6C6; color: #333; }
+  .choice-btn-correct { background: #226622; color: #7FFF00; border-color: #7FFF00; }
+  .choice-btn-wrong { background: #662222; color: #FF6666; border-color: #FF6666; }
+  .choice-btn-dim { background: #888; color: #555; cursor: default; }
+
+  .flow-step { font-family:'VT323',monospace; font-size:18px; padding:8px 12px; border:3px solid #555; border-bottom-color:#222; background:#3a3a3a; color:#fff; cursor:grab; user-select:none; display:flex;align-items:center;gap:8px; margin-bottom:4px; transition:all 0.15s; }
+  .flow-step:hover { background:#4a4a4a; border-color:#aaa; }
+  .flow-step.dragging { opacity:0.4; cursor:grabbing; }
+  .flow-slot { font-family:'VT323',monospace; font-size:17px; padding:8px 12px; border:3px dashed #555; background:#1a1a1a; color:#888; min-height:44px; display:flex;align-items:center;gap:8px; margin-bottom:4px; transition:all 0.15s; }
+  .flow-slot.drag-over { border-color:#FFD700; background:#2a2a00; }
+  .flow-slot.filled { background:#1a2a1a; border-color:#3a6a3a; color:#7FFF00; border-style:solid; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback, useEffect, useRef, useMemo } = React;
+const QUESTION_TIME = 60;
+const FINAL_TIME = 60; // เวลาด่านสุดท้าย
+
+function generateMaze(cols, rows) {
+  const dirs = [
+    { dc: 1,  dr: 0,  w: 1, ow: 3 },
+    { dc: -1, dr: 0,  w: 3, ow: 1 },
+    { dc: 0,  dr: 1,  w: 2, ow: 0 },
+    { dc: 0,  dr: -1, w: 0, ow: 2 },
+  ];
+
+  // Step 1: Perfect maze (recursive backtracker)
+  const grid = Array.from({ length: rows }, (_, r) =>
+    Array.from({ length: cols }, (_, c) => ({ r, c, walls: [true, true, true, true], visited: false }))
+  );
+  const stack = [];
+  grid[0][0].visited = true;
+  stack.push(grid[0][0]);
+  while (stack.length > 0) {
+    const cur = stack[stack.length - 1];
+    const neighbors = dirs
+      .map(d => ({ cell: grid[cur.r + d.dr]?.[cur.c + d.dc], ...d }))
+      .filter(d => d.cell && !d.cell.visited);
+    if (neighbors.length === 0) { stack.pop(); continue; }
+    const { cell, w, ow } = neighbors[Math.floor(Math.random() * neighbors.length)];
+    cur.walls[w] = false;
+    cell.walls[ow] = false;
+    cell.visited = true;
+    stack.push(cell);
+  }
+
+  // Step 2: นับทางเปิดของแต่ละ cell
+  function openCount(r, c) {
+    return dirs.filter(d => !grid[r][c].walls[d.w]).length;
+  }
+
+  // Step 3: Braid — ลบกำแพง dead-end ทุกช่อง (ช่องที่มีทางเดียว) 100%
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (openCount(r, c) === 1) {
+        // หา neighbor ที่ยังมีกำแพงกั้นอยู่ แล้วลบออก
+        const candidates = dirs.filter(d => {
+          const nr = r + d.dr; const nc = c + d.dc;
+          return nr >= 0 && nr < rows && nc >= 0 && nc < cols && grid[r][c].walls[d.w];
+        });
+        if (candidates.length > 0) {
+          const pick = candidates[Math.floor(Math.random() * candidates.length)];
+          const nr = r + pick.dr; const nc = c + pick.dc;
+          grid[r][c].walls[pick.w] = false;
+          grid[nr][nc].walls[pick.ow] = false;
+        }
+      }
+    }
+  }
+
+  // Step 4: เพิ่มทางแยกเพิ่มเติมอีก ~25% เพื่อให้มีหลายเส้นทางชัดเจน
+  const extra = Math.floor(cols * rows * 0.25);
+  for (let i = 0; i < extra; i++) {
+    const r = Math.floor(Math.random() * rows);
+    const c = Math.floor(Math.random() * cols);
+    const candidates = dirs.filter(d => {
+      const nr = r + d.dr; const nc = c + d.dc;
+      return nr >= 0 && nr < rows && nc >= 0 && nc < cols && grid[r][c].walls[d.w];
+    });
+    if (candidates.length > 0) {
+      const pick = candidates[Math.floor(Math.random() * candidates.length)];
+      const nr = r + pick.dr; const nc = c + pick.dc;
+      grid[r][c].walls[pick.w] = false;
+      grid[nr][nc].walls[pick.ow] = false;
+    }
+  }
+
+  return grid;
+}
+
+// ─── QUESTIONS BANK ─────────────────────────────────────────
+
+const ALL_QUESTIONS = [
+  { id: 1,  cat: "🌍 ความรู้ทั่วไป", q: "เมืองหลวงของประเทศไทยคือที่ไหน?", choices: ["เชียงใหม่","กรุงเทพมหานคร","ภูเก็ต","พัทยา"], ans: 1 },
+  { id: 2,  cat: "🌍 ความรู้ทั่วไป", q: "ดวงอาทิตย์ขึ้นทางทิศใด?", choices: ["ตก","เหนือ","ออก","ใต้"], ans: 2 },
+  { id: 3,  cat: "🌍 ความรู้ทั่วไป", q: "สัปดาห์หนึ่งมีกี่วัน?", choices: ["5","6","7","8"], ans: 2 },
+  { id: 4,  cat: "🌍 ความรู้ทั่วไป", q: "สีของหญ้าคือสีอะไร?", choices: ["แดง","น้ำเงิน","เขียว","เหลือง"], ans: 2 },
+  { id: 5,  cat: "🌍 ความรู้ทั่วไป", q: "ปีหนึ่งมีกี่เดือน?", choices: ["10","11","12","13"], ans: 2 },
+  { id: 6,  cat: "🌍 ความรู้ทั่วไป", q: "วันชาติไทยตรงกับวันที่เท่าไหร่ของเดือนธันวาคม?", choices: ["1","5","10","25"], ans: 1 },
+  { id: 7,  cat: "🌍 ความรู้ทั่วไป", q: "สัตว์ที่บินได้คืออะไร?", choices: ["ปลา","นก","หมู","แมว"], ans: 1 },
+  { id: 8,  cat: "🌍 ความรู้ทั่วไป", q: "ธงชาติไทยมีสีอะไรบ้าง?", choices: ["แดง ขาว น้ำเงิน","แดง เหลือง เขียว","ขาว ดำ แดง","เหลือง น้ำเงิน ขาว"], ans: 0 },
+  { id: 9,  cat: "🌍 ความรู้ทั่วไป", q: "วันปีใหม่ไทยตรงกับเดือนอะไร?", choices: ["มกราคม","เมษายน","ตุลาคม","ธันวาคม"], ans: 1 },
+  { id: 10, cat: "🌍 ความรู้ทั่วไป", q: "สัตว์ชนิดใดที่เป็นสัญลักษณ์ของประเทศไทย?", choices: ["สิงโต","ช้าง","เสือ","มังกร"], ans: 1 },
+  { id: 11, cat: "🌍 ความรู้ทั่วไป", q: "น้ำแข็งเกิดจากอะไร?", choices: ["น้ำร้อน","น้ำแช่แข็ง","เกลือ","อากาศ"], ans: 1 },
+  { id: 12, cat: "🌍 ความรู้ทั่วไป", q: "ดาวที่ส่องแสงในตอนกลางวันคือ?", choices: ["ดวงจันทร์","ดาวเหนือ","ดวงอาทิตย์","ดาวศุกร์"], ans: 2 },
+  { id: 13, cat: "🌍 ความรู้ทั่วไป", q: "ประเทศไทยอยู่ในทวีปอะไร?", choices: ["ยุโรป","แอฟริกา","อเมริกา","เอเชีย"], ans: 3 },
+  { id: 14, cat: "🌍 ความรู้ทั่วไป", q: "สัตว์ชนิดใดที่ว่ายน้ำได้?", choices: ["ม้า","ปลา","แกะ","วัว"], ans: 1 },
+  { id: 15, cat: "🌍 ความรู้ทั่วไป", q: "สีรุ้งมีกี่สี?", choices: ["5","6","7","8"], ans: 2 },
+  { id: 16, cat: "🌍 ความรู้ทั่วไป", q: "ดาวเคราะห์ที่เราอาศัยอยู่ชื่ออะไร?", choices: ["ดาวอังคาร","ดาวพุธ","โลก","ดาวพฤหัส"], ans: 2 },
+  { id: 17, cat: "🌍 ความรู้ทั่วไป", q: "แมวมีกี่ขา?", choices: ["2","4","6","8"], ans: 1 },
+  { id: 18, cat: "🌍 ความรู้ทั่วไป", q: "อาหารประจำชาติไทยที่โด่งดังที่สุดคือ?", choices: ["ซูชิ","ผัดไทย","พิซซ่า","เบอร์เกอร์"], ans: 1 },
+  { id: 19, cat: "🌍 ความรู้ทั่วไป", q: "วันจันทร์มาก่อนวันอะไร?", choices: ["อาทิตย์","อังคาร","พุธ","พฤหัส"], ans: 1 },
+  { id: 20, cat: "🌍 ความรู้ทั่วไป", q: "ปลาหายใจด้วยอะไร?", choices: ["ปอด","หนัง","เหงือก","จมูก"], ans: 2 },
+  { id: 21, cat: "🌍 ความรู้ทั่วไป", q: "กีฬาที่ใช้ลูกบอลกลมเตะเข้าประตูคือ?", choices: ["บาสเกตบอล","วอลเลย์บอล","ฟุตบอล","เบสบอล"], ans: 2 },
+  { id: 22, cat: "🌍 ความรู้ทั่วไป", q: "หมีแพนด้ามีสีอะไร?", choices: ["ขาวล้วน","ดำล้วน","ขาวดำ","น้ำตาล"], ans: 2 },
+  { id: 23, cat: "🌍 ความรู้ทั่วไป", q: "ท้องฟ้าในเวลากลางวันมีสีอะไร?", choices: ["ดำ","แดง","ม่วง","น้ำเงิน"], ans: 3 },
+  { id: 24, cat: "🌍 ความรู้ทั่วไป", q: "ผลไม้ชนิดใดที่มีสีเหลืองและรูปร่างโค้ง?", choices: ["แอปเปิ้ล","กล้วย","ส้ม","มะม่วง"], ans: 1 },
+  { id: 25, cat: "🌍 ความรู้ทั่วไป", q: "เดือนกุมภาพันธ์มีกี่วัน (ปีปกติ)?", choices: ["28","29","30","31"], ans: 0 },
+  { id: 26, cat: "🌍 ความรู้ทั่วไป", q: "ตัวเลขที่ตามหลัง 9 คือ?", choices: ["8","10","11","12"], ans: 1 },
+  { id: 27, cat: "🌍 ความรู้ทั่วไป", q: "พระอาทิตย์ตกทางทิศใด?", choices: ["เหนือ","ออก","ตก","ใต้"], ans: 2 },
+  { id: 28, cat: "🌍 ความรู้ทั่วไป", q: "สัตว์ชนิดใดมีงวง?", choices: ["ยีราฟ","ช้าง","ฮิปโป","แรด"], ans: 1 },
+  { id: 29, cat: "🌍 ความรู้ทั่วไป", q: "ฤดูกาลในประเทศไทยมีกี่ฤดู?", choices: ["2","3","4","5"], ans: 1 },
+  { id: 30, cat: "🌍 ความรู้ทั่วไป", q: "วันครูของไทยตรงกับวันที่เท่าไหร่ของเดือนมกราคม?", choices: ["10","16","20","30"], ans: 1 },
+  { id: 31, cat: "🌍 ความรู้ทั่วไป", q: "ก๊าซที่เราหายใจเข้าไปคือก๊าซอะไร?", choices: ["คาร์บอนไดออกไซด์","ไนโตรเจน","ออกซิเจน","ฮีเลียม"], ans: 2 },
+  { id: 32, cat: "🌍 ความรู้ทั่วไป", q: "น้ำเดือดที่อุณหภูมิกี่องศาเซลเซียส?", choices: ["50°C","75°C","100°C","150°C"], ans: 2 },
+  { id: 33, cat: "🌍 ความรู้ทั่วไป", q: "ส่วนใดของพืชที่ทำหน้าที่สังเคราะห์แสง?", choices: ["ราก","ลำต้น","ใบ","ดอก"], ans: 2 },
+  { id: 34, cat: "🌍 ความรู้ทั่วไป", q: "สัตว์เลี้ยงลูกด้วยนมที่บินได้คือ?", choices: ["นก","ค้างคาว","แมลงปอ","ผีเสื้อ"], ans: 1 },
+  { id: 35, cat: "🌍 ความรู้ทั่วไป", q: "แรงที่ดึงทุกสิ่งลงสู่พื้นโลกเรียกว่า?", choices: ["แรงเสียดทาน","แรงโน้มถ่วง","แรงแม่เหล็ก","แรงลม"], ans: 1 },
+  { id: 36, cat: "🌍 ความรู้ทั่วไป", q: "สสารมีกี่สถานะพื้นฐาน?", choices: ["2","3","4","5"], ans: 1 },
+  { id: 37, cat: "🌍 ความรู้ทั่วไป", q: "ดวงจันทร์เป็นบริวารของดาวอะไร?", choices: ["ดาวอังคาร","ดวงอาทิตย์","โลก","ดาวพฤหัส"], ans: 2 },
+  { id: 38, cat: "🌍 ความรู้ทั่วไป", q: "สัตว์ชนิดใดเป็นสัตว์เลือดเย็น?", choices: ["สุนัข","แมว","จระเข้","ม้า"], ans: 2 },
+  { id: 39, cat: "🌍 ความรู้ทั่วไป", q: "อวัยวะใดทำหน้าที่สูบฉีดเลือด?", choices: ["ปอด","ตับ","หัวใจ","ไต"], ans: 2 },
+  { id: 40, cat: "🌍 ความรู้ทั่วไป", q: "แสงสีขาวประกอบด้วยแสงกี่สี?", choices: ["3","5","7","9"], ans: 2 },
+  { id: 41, cat: "🌍 ความรู้ทั่วไป", q: "ทวีปที่ใหญ่ที่สุดในโลกคือ?", choices: ["แอฟริกา","อเมริกาเหนือ","เอเชีย","ยุโรป"], ans: 2 },
+  { id: 42, cat: "🌍 ความรู้ทั่วไป", q: "มหาสมุทรที่ใหญ่ที่สุดในโลกคือ?", choices: ["แอตแลนติก","แปซิฟิก","อินเดีย","อาร์กติก"], ans: 1 },
+  { id: 43, cat: "🌍 ความรู้ทั่วไป", q: "แม่น้ำที่ยาวที่สุดในโลกคือ?", choices: ["แม่น้ำไนล์","แม่น้ำอเมซอน","แม่น้ำเจ้าพระยา","แม่น้ำโขง"], ans: 0 },
+  { id: 44, cat: "🌍 ความรู้ทั่วไป", q: "ประเทศใดมีพื้นที่ใหญ่ที่สุดในโลก?", choices: ["จีน","รัสเซีย","แคนาดา","สหรัฐอเมริกา"], ans: 1 },
+  { id: 45, cat: "🌍 ความรู้ทั่วไป", q: "ภูเขาที่สูงที่สุดในโลกคือ?", choices: ["ภูเขาฟูจิ","ภูเขาเอเวอเรสต์","ภูเขาคิลิมันจาโร","ภูเขาแอลป์"], ans: 1 },
+  { id: 46, cat: "🌍 ความรู้ทั่วไป", q: "ประเทศไทยมีกี่จังหวัด?", choices: ["75","76","77","78"], ans: 2 },
+  { id: 47, cat: "🌍 ความรู้ทั่วไป", q: "พยัญชนะไทยตัวแรกคืออะไร?", choices: ["ข","ก","ค","ง"], ans: 1 },
+  { id: 48, cat: "🌍 ความรู้ทั่วไป", q: "พยัญชนะไทยมีกี่ตัว?", choices: ["42","44","46","48"], ans: 1 },
+  { id: 49, cat: "🌍 ความรู้ทั่วไป", q: "5 + 7 เท่ากับเท่าไหร่?", choices: ["10","11","12","13"], ans: 2 },
+  { id: 50, cat: "🌍 ความรู้ทั่วไป", q: "1 กิโลเมตร เท่ากับกี่เมตร?", choices: ["10","100","1,000","10,000"], ans: 2 },
+  { id: 51, cat: "🌍 ความรู้ทั่วไป", q: "เมืองหลวงของญี่ปุ่นคือ?", choices: ["โอซากา","โตเกียว","เกียวโต","ฮิโรชิมา"], ans: 1 },
+  { id: 52, cat: "🌍 ความรู้ทั่วไป", q: "กำแพงเมืองจีนอยู่ในประเทศใด?", choices: ["ญี่ปุ่น","เกาหลี","จีน","มองโกเลีย"], ans: 2 },
+  { id: 53, cat: "🌍 ความรู้ทั่วไป", q: "สัตว์ชนิดใดไม่มีกระดูกสันหลัง?", choices: ["กบ","งู","หอยทาก","ปลา"], ans: 2 },
+  { id: 54, cat: "🌍 ความรู้ทั่วไป", q: "ระบบสุริยะมีดาวเคราะห์กี่ดวง?", choices: ["6","7","8","9"], ans: 2 },
+  { id: 55, cat: "🌍 ความรู้ทั่วไป", q: "กระดูกในร่างกายมนุษย์มีประมาณกี่ชิ้น?", choices: ["106","206","306","406"], ans: 1 },
+  { id: 56, cat: "🌍 ความรู้ทั่วไป", q: "1 ชั่วโมง มีกี่นาที?", choices: ["30","45","60","100"], ans: 2 },
+  { id: 57, cat: "🌍 ความรู้ทั่วไป", q: "แม่น้ำเจ้าพระยาไหลลงสู่อ่าวใด?", choices: ["อ่าวไทย","อ่าวเบงกอล","อ่าวเปอร์เซีย","อ่าวเม็กซิโก"], ans: 0 },
+  { id: 58, cat: "🌍 ความรู้ทั่วไป", q: "ทะเลทรายที่ใหญ่ที่สุดในโลกคือ?", choices: ["โกบี","ซาฮารา","อาราเบียน","คาลาฮารี"], ans: 1 },
+  { id: 59, cat: "🌍 ความรู้ทั่วไป", q: "สัตว์ชนิดใดเป็นแมลง?", choices: ["แมงมุม","มด","แมงป่อง","กิ้งกือ"], ans: 1 },
+  { id: 60, cat: "🌍 ความรู้ทั่วไป", q: "ผิวหนังเป็นอวัยวะที่ใหญ่ที่สุดของร่างกายจริงหรือไม่?", choices: ["จริง","ไม่จริง","ไม่แน่ใจ","ขึ้นอยู่กับคน"], ans: 0 },
+  { id: 61, cat: "🌍 ความรู้ทั่วไป", q: "วิตามินซีพบมากในผลไม้ชนิดใด?", choices: ["กล้วย","มะม่วง","ส้ม","แตงโม"], ans: 2 },
+  { id: 62, cat: "🌍 ความรู้ทั่วไป", q: "ใครเป็นผู้ค้นพบทวีปอเมริกา?", choices: ["มาร์โคโปโล","โคลัมบัส","แมกเจลแลน","วาสโกดากามา"], ans: 1 },
+  { id: 63, cat: "🌍 ความรู้ทั่วไป", q: "ไดโนเสาร์สูญพันธุ์ไปเมื่อกี่ล้านปีก่อน?", choices: ["6.5 ล้านปี","65 ล้านปี","650 ล้านปี","6,500 ล้านปี"], ans: 1 },
+  { id: 64, cat: "🌍 ความรู้ทั่วไป", q: "วันเด็กแห่งชาติตรงกับวันเสาร์ที่สองของเดือนอะไร?", choices: ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน"], ans: 0 },
+  { id: 65, cat: "🌍 ความรู้ทั่วไป", q: "ภาษาอังกฤษมีตัวอักษรกี่ตัว?", choices: ["24","26","28","30"], ans: 1 },
+  { id: 66, cat: "🌍 ความรู้ทั่วไป", q: "เครื่องดนตรีชนิดใดเป็นเครื่องสาย?", choices: ["กลอง","ขลุ่ย","ซอ","ฉิ่ง"], ans: 2 },
+  { id: 67, cat: "🌍 ความรู้ทั่วไป", q: "ดอกไม้ประจำชาติไทยคือดอกอะไร?", choices: ["ดอกกุหลาบ","ดอกราชพฤกษ์","ดอกบัว","ดอกมะลิ"], ans: 1 },
+  { id: 68, cat: "🌍 ความรู้ทั่วไป", q: "ประเทศใดอยู่ทางใต้ของประเทศไทย?", choices: ["ลาว","เมียนมา","มาเลเซีย","กัมพูชา"], ans: 2 },
+  { id: 69, cat: "🌍 ความรู้ทั่วไป", q: "นมวัวมีสารอาหารใดเป็นหลัก?", choices: ["เหล็ก","แคลเซียม","วิตามินเอ","โปรตีนจากพืช"], ans: 1 },
+  { id: 70, cat: "🌍 ความรู้ทั่วไป", q: "1 โหล มีกี่ชิ้น?", choices: ["6","10","12","24"], ans: 2 },
+  { id: 71, cat: "🌍 ความรู้ทั่วไป", q: "ทิศเหนืออยู่ตรงข้ามกับทิศใด?", choices: ["ออก","ตก","ใต้","เหนือ"], ans: 2 },
+  { id: 72, cat: "🌍 ความรู้ทั่วไป", q: "คนเราใช้อวัยวะใดในการมองเห็น?", choices: ["หู","จมูก","ตา","ปาก"], ans: 2 },
+  { id: 73, cat: "🌍 ความรู้ทั่วไป", q: "สัตว์ชนิดใดออกลูกเป็นไข่?", choices: ["แมว","สุนัข","ไก่","วัว"], ans: 2 },
+  { id: 74, cat: "🌍 ความรู้ทั่วไป", q: "โลกหมุนรอบตัวเองใช้เวลาประมาณกี่ชั่วโมง?", choices: ["12","18","24","48"], ans: 2 },
+  { id: 75, cat: "🌍 ความรู้ทั่วไป", q: "ต้นไม้ดูดก๊าซอะไรเข้าไป?", choices: ["ออกซิเจน","คาร์บอนไดออกไซด์","ไนโตรเจน","ฮีเลียม"], ans: 1 },
+  { id: 76, cat: "🌍 ความรู้ทั่วไป", q: "วัดพระแก้วอยู่ที่จังหวัดอะไร?", choices: ["เชียงใหม่","กรุงเทพมหานคร","อยุธยา","นครราชสีมา"], ans: 1 },
+  { id: 77, cat: "🌍 ความรู้ทั่วไป", q: "ผักชนิดใดมีสีส้ม?", choices: ["บร็อคโคลี","กะหล่ำปลี","แครอท","ผักกาด"], ans: 2 },
+  { id: 78, cat: "🌍 ความรู้ทั่วไป", q: "สัตว์ชนิดใดเป็นสัตว์ครึ่งบกครึ่งน้ำ?", choices: ["ปลา","กบ","งู","นก"], ans: 1 },
+  { id: 79, cat: "🌍 ความรู้ทั่วไป", q: "เงินตราของประเทศไทยเรียกว่าอะไร?", choices: ["ดอลลาร์","เยน","บาท","หยวน"], ans: 2 },
+  { id: 80, cat: "🌍 ความรู้ทั่วไป", q: "สัตว์ชนิดใดมีปีกแต่บินไม่ได้?", choices: ["นกอินทรี","นกเพนกวิน","นกแก้ว","นกพิราบ"], ans: 1 },
+  { id: 81, cat: "🌍 ความรู้ทั่วไป", q: "กีฬาประจำชาติไทยคือกีฬาอะไร?", choices: ["ฟุตบอล","มวยไทย","วอลเลย์บอล","ว่ายน้ำ"], ans: 1 },
+  { id: 82, cat: "🌍 ความรู้ทั่วไป", q: "อาหารไทยชนิดใดเป็นแกง?", choices: ["ส้มตำ","ผัดไทย","แกงเขียวหวาน","ข้าวมันไก่"], ans: 2 },
+  { id: 83, cat: "🌍 ความรู้ทั่วไป", q: "ทวีปใดหนาวที่สุด?", choices: ["เอเชีย","ยุโรป","แอนตาร์กติกา","อเมริกาเหนือ"], ans: 2 },
+  { id: 84, cat: "🌍 ความรู้ทั่วไป", q: "สัตว์ชนิดใดมีลายดำขาว?", choices: ["สิงโต","ม้าลาย","ช้าง","หมี"], ans: 1 },
+  { id: 85, cat: "🌍 ความรู้ทั่วไป", q: "วันแม่แห่งชาติของไทยตรงกับวันที่เท่าไหร่ของเดือนสิงหาคม?", choices: ["5","12","15","20"], ans: 1 },
+  { id: 86, cat: "🌍 ความรู้ทั่วไป", q: "น้ำครอบคลุมพื้นผิวโลกประมาณกี่เปอร์เซ็นต์?", choices: ["50%","60%","70%","80%"], ans: 2 },
+  { id: 87, cat: "🌍 ความรู้ทั่วไป", q: "เครื่องบินลำแรกของโลกสร้างโดยใคร?", choices: ["เอดิสัน","พี่น้องตระกูลไรท์","ไอน์สไตน์","นิวตัน"], ans: 1 },
+  { id: 88, cat: "🌍 ความรู้ทั่วไป", q: "ผลไม้ราชาผลไม้ของไทยคือ?", choices: ["มังคุด","ทุเรียน","มะม่วง","ลำไย"], ans: 1 },
+  { id: 89, cat: "🌍 ความรู้ทั่วไป", q: "วันพ่อแห่งชาติตรงกับวันที่เท่าไหร่ของเดือนธันวาคม?", choices: ["1","5","10","25"], ans: 1 },
+  { id: 90, cat: "🌍 ความรู้ทั่วไป", q: "วันลอยกระทงตรงกับวันเพ็ญเดือนอะไร?", choices: ["เดือน 10","เดือน 11","เดือน 12","เดือน 1"], ans: 1 },
+  { id: 91, cat: "🌍 ความรู้ทั่วไป", q: "มนุษย์มีฟันแท้กี่ซี่?", choices: ["20","28","32","36"], ans: 2 },
+  { id: 92, cat: "🌍 ความรู้ทั่วไป", q: "ดาวเคราะห์ดวงใดมีวงแหวน?", choices: ["ดาวอังคาร","ดาวพฤหัส","ดาวเสาร์","ดาวยูเรนัส"], ans: 2 },
+  { id: 93, cat: "🌍 ความรู้ทั่วไป", q: "อาหารชนิดใดทำจากข้าว?", choices: ["ขนมปัง","ก๋วยเตี๋ยว","ข้าวเหนียว","พาสต้า"], ans: 2 },
+  { id: 94, cat: "🌍 ความรู้ทั่วไป", q: "คนเรามีนิ้วมือทั้งหมดกี่นิ้ว?", choices: ["8","10","12","14"], ans: 1 },
+  { id: 95, cat: "🌍 ความรู้ทั่วไป", q: "ผลไม้ราชินีผลไม้ของไทยคือ?", choices: ["ทุเรียน","มังคุด","ลิ้นจี่","เงาะ"], ans: 1 },
+  { id: 96, cat: "🌍 ความรู้ทั่วไป", q: "สัตว์เลี้ยงลูกด้วยนมที่อาศัยในทะเลคือ?", choices: ["ฉลาม","ปลาหมึก","โลมา","ปลากระเบน"], ans: 2 },
+  { id: 97, cat: "🌍 ความรู้ทั่วไป", q: "ประเทศไทยเคยมีชื่อเดิมว่าอะไร?", choices: ["สยาม","ลังกา","ชวา","มลายู"], ans: 0 },
+  { id: 98, cat: "🌍 ความรู้ทั่วไป", q: "ดวงอาทิตย์เป็นดาวชนิดใด?", choices: ["ดาวเคราะห์","ดาวฤกษ์","ดาวหาง","ดาวเทียม"], ans: 1 },
+  { id: 99, cat: "🌍 ความรู้ทั่วไป", q: "น้ำตาลทรายทำมาจากพืชชนิดใด?", choices: ["ข้าวโพด","มันสำปะหลัง","อ้อย","ข้าว"], ans: 2 },
+  { id: 100,cat: "🌍 ความรู้ทั่วไป", q: "จังหวัดที่เล็กที่สุดของประเทศไทยคือ?", choices: ["สมุทรสงคราม","สิงห์บุรี","ชัยนาท","นนทบุรี"], ans: 0 },
+];
+
+const FINAL_SCENARIOS = [
+  {
+    topic: "🍽️ การล้างจาน",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "เปิดน้ำที่ก๊อก", type: "process" },
+      { id: "c", label: "ใส่น้ำยาล้างจาน", type: "process" },
+      { id: "d", label: "ขัดจานด้วยฟองน้ำ", type: "process" },
+      { id: "e", label: "ล้างออกด้วยน้ำสะอาด", type: "process" },
+      { id: "f", label: "จานสะอาดแล้วหรือยัง?", type: "decision" },
+      { id: "g", label: "คว่ำจานผึ่งให้แห้ง", type: "process" },
+      { id: "h", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "💧 ขั้นตอนแรกต้องเปิดน้ำก่อน",
+      "🧼 ต้องใส่น้ำยาก่อนขัด ไม่ใช่หลังขัด",
+      "🔍 มีขั้นตอนตรวจสอบว่าสะอาดพอหรือยัง",
+      "✨ ขั้นสุดท้ายก่อน End คือผึ่งให้แห้ง",
+      "🔢 มีทั้งหมด 8 ขั้นตอน",
+      "🔶 ขั้นที่ 6 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "🚿 การอาบน้ำ",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "เปิดน้ำตรวจสอบอุณหภูมิ", type: "process" },
+      { id: "c", label: "เปียกร่างกายทั้งหมด", type: "process" },
+      { id: "d", label: "ถูสบู่ทั่วร่างกาย", type: "process" },
+      { id: "e", label: "สระผม", type: "process" },
+      { id: "f", label: "ล้างสบู่และแชมพูออก", type: "process" },
+      { id: "g", label: "ล้างสะอาดหมดแล้วหรือยัง?", type: "decision" },
+      { id: "h", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "🚿 เริ่มด้วยเปิดน้ำตรวจอุณหภูมิก่อน",
+      "💦 ต้องเปียกร่างกายก่อนถูสบู่",
+      "🧴 สระผมหลังถูสบู่ทั่วร่างกาย",
+      "🔍 มีขั้นตรวจสอบว่าล้างสะอาดหมดหรือยัง",
+      "🔢 มีทั้งหมด 8 ขั้นตอน",
+      "🔶 ขั้นที่ 7 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "🌱 การปลูกต้นไม้",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "เตรียมดินและกระถาง", type: "process" },
+      { id: "c", label: "ใส่ดินลงกระถาง", type: "process" },
+      { id: "d", label: "ปลูกเมล็ดหรือต้นกล้า", type: "process" },
+      { id: "e", label: "รดน้ำให้ชุ่ม", type: "process" },
+      { id: "f", label: "วางในที่มีแสงแดด", type: "process" },
+      { id: "g", label: "ต้นไม้งอกแล้วหรือยัง?", type: "decision" },
+      { id: "h", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "🪴 เริ่มเตรียมดินและกระถางก่อน",
+      "🌍 ใส่ดินลงกระถางก่อนปลูก",
+      "🌊 รดน้ำหลังปลูกเมล็ดแล้ว",
+      "☀️ วางในที่มีแสงแดดเป็นขั้นก่อนสุดท้าย",
+      "🔢 มีทั้งหมด 8 ขั้นตอน",
+      "🔶 ขั้นที่ 7 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "🖥️ การเปิดคอมพิวเตอร์",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "กดปุ่ม Power", type: "process" },
+      { id: "c", label: "รอเครื่องบูต", type: "process" },
+      { id: "d", label: "เครื่องเปิดสำเร็จหรือไม่?", type: "decision" },
+      { id: "e", label: "Login เข้าสู่ระบบ", type: "process" },
+      { id: "f", label: "เปิดโปรแกรมที่ต้องการ", type: "process" },
+      { id: "g", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "🖥️ เริ่มด้วยกดปุ่ม Power",
+      "⏳ ต้องรอเครื่องบูตก่อน Login",
+      "🔍 มีขั้นตรวจสอบว่าเปิดสำเร็จหรือไม่",
+      "📱 เปิดโปรแกรมเป็นขั้นสุดท้าย",
+      "🔢 มีทั้งหมด 7 ขั้นตอน",
+      "🔶 ขั้นที่ 4 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "📧 การส่งอีเมล",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "เปิดโปรแกรมอีเมล", type: "process" },
+      { id: "c", label: "กดเขียนข้อความใหม่", type: "process" },
+      { id: "d", label: "ใส่อีเมลผู้รับ", type: "process" },
+      { id: "e", label: "พิมพ์หัวข้อและเนื้อหา", type: "process" },
+      { id: "f", label: "ข้อมูลครบถ้วนหรือไม่?", type: "decision" },
+      { id: "g", label: "กดส่งอีเมล", type: "process" },
+      { id: "h", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "📧 เปิดโปรแกรมอีเมลเป็นขั้นแรก",
+      "✉️ กดเขียนข้อความใหม่ก่อนใส่อีเมลผู้รับ",
+      "📝 ใส่ที่อยู่ผู้รับก่อนพิมพ์เนื้อหา",
+      "🔍 มีขั้นตรวจสอบว่าข้อมูลครบหรือไม่",
+      "🔢 มีทั้งหมด 8 ขั้นตอน",
+      "🔶 ขั้นที่ 6 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "🍳 การทำไข่เจียว",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "เตรียมไข่และกะทะ", type: "process" },
+      { id: "c", label: "ตั้งกะทะและใส่น้ำมัน", type: "process" },
+      { id: "d", label: "ตีไข่ใส่ชาม", type: "process" },
+      { id: "e", label: "เทไข่ลงกะทะ", type: "process" },
+      { id: "f", label: "ไข่สุกแล้วหรือยัง?", type: "decision" },
+      { id: "g", label: "ตักใส่จาน", type: "process" },
+      { id: "h", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "🍳 เริ่มเตรียมไข่และกะทะก่อน",
+      "🔥 ตั้งกะทะก่อนตีไข่",
+      "🥚 ตีไข่ใส่ชามก่อนเทลงกะทะ",
+      "🔍 มีขั้นตรวจสอบว่าไข่สุกแล้วหรือยัง",
+      "🔢 มีทั้งหมด 8 ขั้นตอน",
+      "🔶 ขั้นที่ 6 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "📚 การยืมหนังสือห้องสมุด",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "ค้นหาหนังสือที่ต้องการ", type: "process" },
+      { id: "c", label: "หนังสือมีอยู่หรือไม่?", type: "decision" },
+      { id: "d", label: "หยิบหนังสือออกจากชั้น", type: "process" },
+      { id: "e", label: "นำบัตรสมาชิกไปเคาน์เตอร์", type: "process" },
+      { id: "f", label: "บันทึกการยืม", type: "process" },
+      { id: "g", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "📚 เริ่มค้นหาหนังสือที่ต้องการก่อน",
+      "🔍 มีขั้นตรวจสอบว่าหนังสือมีอยู่หรือไม่",
+      "📖 หยิบหนังสือก่อนไปเคาน์เตอร์",
+      "💳 ต้องใช้บัตรสมาชิกที่เคาน์เตอร์",
+      "🔢 มีทั้งหมด 7 ขั้นตอน",
+      "🔶 ขั้นที่ 3 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "🚌 การขึ้นรถประจำทาง",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "ไปยืนที่ป้ายรถเมล์", type: "process" },
+      { id: "c", label: "รอรถสายที่ต้องการ", type: "process" },
+      { id: "d", label: "รถมาถึงหรือไม่?", type: "decision" },
+      { id: "e", label: "โบกรถและขึ้นรถ", type: "process" },
+      { id: "f", label: "จ่ายค่าโดยสาร", type: "process" },
+      { id: "g", label: "ลงรถที่ป้ายปลายทาง", type: "process" },
+      { id: "h", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "🚌 ไปยืนที่ป้ายรถเมล์ก่อน",
+      "⏳ รอรถสายที่ต้องการก่อนโบก",
+      "🔍 มีขั้นตรวจสอบว่ารถมาถึงหรือไม่",
+      "💰 จ่ายค่าโดยสารหลังขึ้นรถ",
+      "🔢 มีทั้งหมด 8 ขั้นตอน",
+      "🔶 ขั้นที่ 4 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "🦷 การแปรงฟัน",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "หยิบแปรงสีฟัน", type: "process" },
+      { id: "c", label: "บีบยาสีฟันลงแปรง", type: "process" },
+      { id: "d", label: "แปรงฟันให้ครบทุกด้าน", type: "process" },
+      { id: "e", label: "บ้วนปากด้วยน้ำ", type: "process" },
+      { id: "f", label: "ฟันสะอาดหมดแล้วหรือยัง?", type: "decision" },
+      { id: "g", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "🪥 หยิบแปรงสีฟันเป็นขั้นแรก",
+      "🧴 บีบยาสีฟันก่อนแปรง",
+      "🦷 แปรงให้ครบทุกด้านก่อนบ้วนปาก",
+      "🔍 มีขั้นตรวจสอบว่าฟันสะอาดหมดหรือยัง",
+      "🔢 มีทั้งหมด 7 ขั้นตอน",
+      "🔶 ขั้นที่ 6 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "🛒 การซื้อของในซูเปอร์มาร์เก็ต",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "จดรายการสิ่งของที่ต้องซื้อ", type: "process" },
+      { id: "c", label: "หยิบตะกร้าหรือรถเข็น", type: "process" },
+      { id: "d", label: "เดินเลือกสินค้าตามรายการ", type: "process" },
+      { id: "e", label: "ของครบทุกรายการหรือไม่?", type: "decision" },
+      { id: "f", label: "ไปชำระเงินที่แคชเชียร์", type: "process" },
+      { id: "g", label: "รับถุงและใบเสร็จ", type: "process" },
+      { id: "h", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "📝 จดรายการสิ่งของก่อนเข้าร้าน",
+      "🛒 หยิบตะกร้าหรือรถเข็นก่อนเลือกสินค้า",
+      "🔍 มีขั้นตรวจสอบว่าของครบทุกรายการหรือไม่",
+      "💳 ชำระเงินก่อนรับถุงและใบเสร็จ",
+      "🔢 มีทั้งหมด 8 ขั้นตอน",
+      "🔶 ขั้นที่ 5 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "🖨️ การพิมพ์เอกสาร",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "เปิดไฟล์เอกสาร", type: "process" },
+      { id: "c", label: "เชื่อมต่อเครื่องพิมพ์", type: "process" },
+      { id: "d", label: "เครื่องพิมพ์พร้อมหรือไม่?", type: "decision" },
+      { id: "e", label: "เลือกจำนวนหน้าและตั้งค่า", type: "process" },
+      { id: "f", label: "กดปุ่มพิมพ์", type: "process" },
+      { id: "g", label: "รับเอกสารจากถาดพิมพ์", type: "process" },
+      { id: "h", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "📄 เปิดไฟล์เอกสารเป็นขั้นแรก",
+      "🔌 เชื่อมต่อเครื่องพิมพ์ก่อนเลือกค่า",
+      "🔍 มีขั้นตรวจสอบว่าเครื่องพร้อมหรือไม่",
+      "⚙️ ตั้งค่าก่อนกดพิมพ์",
+      "🔢 มีทั้งหมด 8 ขั้นตอน",
+      "🔶 ขั้นที่ 4 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "🏧 การถอนเงินจากตู้ ATM",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "เสียบบัตร ATM", type: "process" },
+      { id: "c", label: "กดรหัส PIN", type: "process" },
+      { id: "d", label: "รหัสถูกต้องหรือไม่?", type: "decision" },
+      { id: "e", label: "เลือกรายการถอนเงิน", type: "process" },
+      { id: "f", label: "กรอกจำนวนเงิน", type: "process" },
+      { id: "g", label: "รับเงินและบัตรคืน", type: "process" },
+      { id: "h", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "💳 เสียบบัตร ATM เป็นขั้นแรก",
+      "🔑 กด PIN ก่อนเลือกรายการ",
+      "🔍 มีขั้นตรวจสอบว่ารหัสถูกต้องหรือไม่",
+      "💵 รับเงินและบัตรคืนเป็นขั้นสุดท้ายก่อน End",
+      "🔢 มีทั้งหมด 8 ขั้นตอน",
+      "🔶 ขั้นที่ 4 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "🧺 การซักผ้า",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "แยกผ้าสีอ่อนและสีเข้ม", type: "process" },
+      { id: "c", label: "ใส่ผ้าลงเครื่องซักผ้า", type: "process" },
+      { id: "d", label: "ใส่ผงซักฟอก", type: "process" },
+      { id: "e", label: "เลือกโปรแกรมและกดเริ่ม", type: "process" },
+      { id: "f", label: "ผ้าสะอาดแล้วหรือไม่?", type: "decision" },
+      { id: "g", label: "นำผ้าออกมาตาก", type: "process" },
+      { id: "h", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "👔 แยกผ้าสีอ่อน-เข้มเป็นขั้นแรก",
+      "👕 ใส่ผ้าลงเครื่องก่อนใส่ผง",
+      "🧴 ใส่ผงซักฟอกก่อนเลือกโปรแกรม",
+      "🔍 มีขั้นตรวจสอบว่าผ้าสะอาดหรือไม่",
+      "🔢 มีทั้งหมด 8 ขั้นตอน",
+      "🔶 ขั้นที่ 6 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "🔍 การค้นหาข้อมูลในอินเทอร์เน็ต",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "เปิดเบราว์เซอร์", type: "process" },
+      { id: "c", label: "พิมพ์คำค้นหาใน Search Engine", type: "process" },
+      { id: "d", label: "กดปุ่มค้นหา", type: "process" },
+      { id: "e", label: "พบข้อมูลที่ต้องการหรือไม่?", type: "decision" },
+      { id: "f", label: "คลิกเข้าเว็บไซต์", type: "process" },
+      { id: "g", label: "อ่านและบันทึกข้อมูล", type: "process" },
+      { id: "h", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "🌐 เปิดเบราว์เซอร์เป็นขั้นแรก",
+      "⌨️ พิมพ์คำค้นหาก่อนกดปุ่มค้นหา",
+      "🔍 มีขั้นตรวจสอบว่าพบข้อมูลที่ต้องการหรือไม่",
+      "📖 อ่านและบันทึกเป็นขั้นสุดท้ายก่อน End",
+      "🔢 มีทั้งหมด 8 ขั้นตอน",
+      "🔶 ขั้นที่ 5 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+  {
+    topic: "🎒 การเตรียมกระเป๋านักเรียน",
+    steps: [
+      { id: "a", label: "เริ่มต้น (Start)", type: "start" },
+      { id: "b", label: "ดูตารางเรียนวันพรุ่งนี้", type: "process" },
+      { id: "c", label: "เตรียมหนังสือและสมุดตามวิชา", type: "process" },
+      { id: "d", label: "ใส่อุปกรณ์การเรียน", type: "process" },
+      { id: "e", label: "ครบทุกวิชาหรือไม่?", type: "decision" },
+      { id: "f", label: "ใส่ข้าวกล่องและน้ำดื่ม", type: "process" },
+      { id: "g", label: "สิ้นสุด (End)", type: "end" },
+    ],
+    hints: [
+      "📅 ดูตารางเรียนก่อนเตรียมของ",
+      "📚 เตรียมหนังสือก่อนใส่อุปกรณ์",
+      "🔍 มีขั้นตรวจสอบว่าครบทุกวิชาหรือไม่",
+      "🍱 ใส่ข้าวกล่องเป็นขั้นสุดท้ายก่อน End",
+      "🔢 มีทั้งหมด 7 ขั้นตอน",
+      "🔶 ขั้นที่ 5 คือคำถาม (เพชรสีเหลือง)",
+    ],
+  },
+];
+
+function shuffleArr(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+function getRandomQ(usedIds) {
+  const pool = ALL_QUESTIONS.filter(q => !usedIds.includes(q.id));
+  if (!pool.length) return ALL_QUESTIONS[Math.floor(Math.random() * ALL_QUESTIONS.length)];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// ─── MINECRAFT SPRITES ───────────────────────────────────────
+function Steve({ size = 40 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" style={{ imageRendering: "pixelated" }}>
+      <rect x="4" y="0" width="8" height="8" fill="#C8A97A" />
+      <rect x="5" y="2" width="2" height="2" fill="#3B3BFF" />
+      <rect x="9" y="2" width="2" height="2" fill="#3B3BFF" />
+      <rect x="5" y="5" width="6" height="1" fill="#7A3B1A" />
+      <rect x="4" y="8" width="8" height="5" fill="#3B5BDB" />
+      <rect x="1" y="8" width="3" height="5" fill="#3B5BDB" />
+      <rect x="12" y="8" width="3" height="5" fill="#3B5BDB" />
+      <rect x="4" y="13" width="3" height="3" fill="#2B2B8A" />
+      <rect x="9" y="13" width="3" height="3" fill="#2B2B8A" />
+    </svg>
+  );
+}
+
+function Creeper({ size = 32 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" style={{ imageRendering: "pixelated" }}>
+      <rect x="3" y="0" width="10" height="8" fill="#5D8A3C" />
+      <rect x="4" y="2" width="2" height="2" fill="#1a1a1a" />
+      <rect x="10" y="2" width="2" height="2" fill="#1a1a1a" />
+      <rect x="5" y="5" width="6" height="1" fill="#1a1a1a" />
+      <rect x="6" y="4" width="4" height="3" fill="#1a1a1a" />
+      <rect x="7" y="5" width="2" height="2" fill="#5D8A3C" />
+      <rect x="4" y="8" width="8" height="6" fill="#4a7030" />
+      <rect x="3" y="12" width="4" height="4" fill="#4a7030" />
+      <rect x="9" y="12" width="4" height="4" fill="#4a7030" />
+    </svg>
+  );
+}
+
+function Heart({ filled }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 16 16" style={{ imageRendering: "pixelated", display: "inline-block" }}>
+      <rect x="2" y="4" width="2" height="2" fill={filled ? "#FF0000" : "#555"} />
+      <rect x="4" y="2" width="4" height="2" fill={filled ? "#FF0000" : "#555"} />
+      <rect x="10" y="2" width="4" height="2" fill={filled ? "#FF0000" : "#555"} />
+      <rect x="12" y="4" width="2" height="2" fill={filled ? "#FF0000" : "#555"} />
+      <rect x="2" y="4" width="12" height="4" fill={filled ? "#FF0000" : "#555"} />
+      <rect x="4" y="8" width="8" height="2" fill={filled ? "#FF0000" : "#555"} />
+      <rect x="6" y="10" width="4" height="2" fill={filled ? "#FF0000" : "#555"} />
+      <rect x="7" y="12" width="2" height="2" fill={filled ? "#FF0000" : "#555"} />
+      <rect x="3" y="4" width="2" height="2" fill={filled ? "#CC0000" : "#444"} />
+    </svg>
+  );
+}
+
+// ─── MAZE CONSTANTS ──────────────────────────────────────────
+const MAZE_COLS = 7;
+const MAZE_ROWS = 7;
+const START_LIVES = 3;
+const RETREAT_ON_DEATH = 2;
+const RETREAT_ON_WRONG_FINAL = 3;
+
+function MinecraftMazeGame() {
+  const [screen, setScreen] = useState("intro");
+  const [maze, setMaze] = useState(null);
+  const [playerPos, setPlayerPos] = useState({ r: 0, c: 0 });
+  const [lives, setLives] = useState(START_LIVES);
+  const [hints, setHints] = useState([]);
+  const [usedQIds, setUsedQIds] = useState([]);
+  const [currentQ, setCurrentQ] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [result, setResult] = useState(null);
+  const [pathHistory, setPathHistory] = useState([{ r: 0, c: 0 }]);
+  const [shake, setShake] = useState(false);
+  const [score, setScore] = useState(0);
+  const [currentScenario, setCurrentScenario] = useState(null);
+  const [pendingScenario, setPendingScenario] = useState(null); // สุ่มล่วงหน้าเพื่อให้ hint ตรง
+  const [shuffledSteps, setShuffledSteps] = useState([]);
+  const [placedSteps, setPlacedSteps] = useState([]);
+  const [dragItem, setDragItem] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
+  const [finalResult, setFinalResult] = useState(null);
+  const [wrongSlots, setWrongSlots] = useState([]); // index ของช่องที่เรียงผิด
+  const [showBlockBreak, setShowBlockBreak] = useState(false);
+  const [waitingMove, setWaitingMove] = useState(false); // รอผู้เล่นเลือกทิศทางหลังตอบถูก
+  const [timeLeft, setTimeLeft] = useState(QUESTION_TIME);
+  const timerRef = useRef(null);
+  const currentQRef = useRef(null);
+  const finalTimerRef = useRef(null);
+  const [finalTimeLeft, setFinalTimeLeft] = useState(FINAL_TIME);
+  const waitingMoveRef = useRef(false);
+  const gameStartTimeRef = useRef(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  // resetTimerTrigger เพิ่มขึ้นทุกครั้งที่ต้องการรีเวลาใหม่ (ตอบถูก / คำถามใหม่)
+  const [resetTimerTrigger, setResetTimerTrigger] = useState(0);
+
+  // Keep ref in sync with currentQ so timer closure always sees latest question
+  useEffect(() => { currentQRef.current = currentQ; }, [currentQ]);
+  useEffect(() => { waitingMoveRef.current = waitingMove; }, [waitingMove]);
+
+  // Final stage timer
+  useEffect(() => {
+    if (screen !== "final") {
+      clearInterval(finalTimerRef.current);
+      return;
+    }
+    clearInterval(finalTimerRef.current);
+    finalTimerRef.current = setInterval(() => {
+      setFinalTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(finalTimerRef.current);
+          // หมดเวลา → ลดเลือด
+          setLives(prevLives => {
+            const newLives = prevLives - 1;
+            if (newLives <= 0) {
+              // เลือดหมด → ถอยหลัง 2 ช่อง กลับ game
+              setPathHistory(prevHistory => {
+                const retreat = Math.max(0, prevHistory.length - 1 - 2);
+                const newPos = prevHistory[retreat] || { r: 0, c: 0 };
+                setPlayerPos(newPos);
+                return prevHistory.slice(0, retreat + 1);
+              });
+              setTimeout(() => {
+                setLives(START_LIVES);
+                setWrongSlots([]);
+                setFinalResult(null);
+                setScreen("game");
+                setUsedQIds(prevUsed => { setCurrentQ(getRandomQ(prevUsed)); return prevUsed; });
+                setSelected(null);
+                setResult(null);
+              }, 1500);
+            } else {
+              // ยังมีเลือด → รีเซ็ตเวลาแล้วเริ่ม interval ใหม่
+              setTimeout(() => {
+                setFinalTimeLeft(FINAL_TIME);
+                clearInterval(finalTimerRef.current);
+                finalTimerRef.current = setInterval(() => {
+                  setFinalTimeLeft(p => (p <= 1 ? (clearInterval(finalTimerRef.current), 0) : p - 1));
+                }, 1000);
+              }, 800);
+            }
+            return newLives <= 0 ? 0 : newLives;
+          });
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(finalTimerRef.current);
+  }, [screen]); // eslint-disable-line
+
+  // FIX: Memoize stars so they don't re-render randomly each time
+  const stars = useMemo(() =>
+    Array.from({ length: 30 }).map((_, i) => ({
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 60}%`,
+      duration: `${1 + Math.random() * 2}s`,
+      delay: `${Math.random() * 2}s`,
+    })), []
+  );
+
+  // HINT_POOL ถูกแทนด้วย pendingScenario.hints ที่สุ่มล่วงหน้า
+
+  // Timer: รีเซ็ตและเริ่มใหม่เฉพาะเมื่อมีคำถามใหม่ (resetTimerTrigger เปลี่ยน)
+  // ตอบผิด → timer เดินต่อ (ไม่ reset), ตอบถูก/หมดเวลา → reset
+  useEffect(() => {
+    if (screen !== "game" || !currentQ) {
+      clearInterval(timerRef.current);
+      return;
+    }
+    clearInterval(timerRef.current);
+    setTimeLeft(QUESTION_TIME);
+    timerRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          setTimeout(() => {
+            // หมดเวลา — ไม่ว่าจะกำลังตอบหรือเลือกทิศ → ถอยหลัง 1 ช่อง + คำถามใหม่
+            setWaitingMove(false);
+            setPathHistory(prevHistory => {
+              if (prevHistory.length > 1) {
+                const newPos = prevHistory[prevHistory.length - 2];
+                setPlayerPos(newPos);
+                return prevHistory.slice(0, prevHistory.length - 1);
+              }
+              return prevHistory;
+            });
+            const qId = currentQRef.current?.id;
+            setUsedQIds(prevUsed => {
+              const newUsed = qId ? [...prevUsed, qId] : prevUsed;
+              setCurrentQ(getRandomQ(newUsed));
+              return newUsed;
+            });
+            setSelected(null);
+            setResult(null);
+            // ไม่รีเซ็ตเวลา — timer เดินต่อ
+          }, 0);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [screen, resetTimerTrigger]);
+
+  function initGame() {
+    const m = generateMaze(MAZE_COLS, MAZE_ROWS);
+    setMaze(m);
+    setPlayerPos({ r: 0, c: 0 });
+    setLives(START_LIVES);
+    setHints([]);
+    setUsedQIds([]);
+    setScore(0);
+    setPathHistory([{ r: 0, c: 0 }]);
+    const q = getRandomQ([]);
+    setCurrentQ(q);
+    setSelected(null);
+    setResult(null);
+    setWaitingMove(false);
+    setResetTimerTrigger(t => t + 1);
+    gameStartTimeRef.current = Date.now();
+    // สุ่ม scenario ล่วงหน้าให้ hint ตรงกับด่านสุดท้าย
+    const pending = FINAL_SCENARIOS[Math.floor(Math.random() * FINAL_SCENARIOS.length)];
+    setPendingScenario(pending);
+    setScreen("game");
+  }
+
+  function getNeighborCells(pos, currentMaze) {
+    if (!currentMaze) return [];
+    const cell = currentMaze[pos.r]?.[pos.c];
+    if (!cell) return [];
+    const dirs = [
+      { dr: -1, dc: 0, wall: 0 },
+      { dr: 0,  dc: 1, wall: 1 },
+      { dr: 1,  dc: 0, wall: 2 },
+      { dr: 0,  dc: -1, wall: 3 },
+    ];
+    return dirs
+      .filter(d => !cell.walls[d.wall])
+      .map(d => ({ r: pos.r + d.dr, c: pos.c + d.dc }))
+      .filter(p => p.r >= 0 && p.r < MAZE_ROWS && p.c >= 0 && p.c < MAZE_COLS);
+  }
+
+  function isEnd(pos) { return pos.r === MAZE_ROWS - 1 && pos.c === MAZE_COLS - 1; }
+
+  function buildHint(scenario, hintIndex) {
+    if (!scenario) return `💡 คำใบ้ #${hintIndex + 1}`;
+    const steps = scenario.steps;
+    const total = steps.length;
+    const pool = [
+      () => `🔢 Flowchart นี้มีทั้งหมด ${total} ขั้นตอน`,
+      () => {
+        const first = steps[1];
+        return `${first.type === "decision" ? "🔶" : "🔷"} ขั้นตอนแรกหลัง Start เป็น${first.type === "decision" ? "คำถาม/เงื่อนไข" : "การปฏิบัติ"}`;
+      },
+      () => {
+        const last = steps[total - 2];
+        return `${last.type === "decision" ? "🔶" : "🔷"} ขั้นตอนก่อนถึง End เป็น${last.type === "decision" ? "คำถาม/เงื่อนไข" : "การปฏิบัติ"}`;
+      },
+      () => {
+        const dCount = steps.filter(s => s.type === "decision").length;
+        return `🔶 มีขั้นตอนเงื่อนไข ${dCount} ขั้นใน Flowchart นี้`;
+      },
+      () => {
+        const mid = steps[Math.floor(total / 2)];
+        return `🔷 ขั้นตอนกลาง Flowchart ขึ้นต้นด้วยตัว "${mid.label.charAt(0)}"`;
+      },
+      () => {
+        const s2 = steps[1];
+        const words = s2.label.split(" ");
+        return `🔷 ขั้นที่ 2 เกี่ยวกับ "${words[0]}${words[1] ? " " + words[1] : ""}..."`;
+      },
+      () => {
+        const last = steps[total - 2];
+        const words = last.label.split(" ");
+        return `🔷 ขั้นก่อนจบ มีคำว่า "${words[words.length - 1]}" อยู่ด้วย`;
+      },
+      () => {
+        const s3 = total > 3 ? steps[2] : steps[1];
+        return `🔷 ขั้นที่ 3 เป็น${s3.type === "decision" ? "คำถาม/เงื่อนไข 🔶" : "ขั้นตอนปฏิบัติ 🔷"}`;
+      },
+    ];
+    return pool[hintIndex % pool.length]();
+  }
+
+  function handleAnswer(idx) {
+    if (selected !== null) return;
+    setSelected(idx);
+    const correct = idx === currentQ.ans;
+    setResult(correct ? "correct" : "wrong");
+
+    if (correct) {
+      try {
+        setHints(prev => {
+          if (prev.length >= 8) return prev; // จำกัด 8 คำใบ้
+          if (Math.random() < 0.5) return prev; // 50% สุ่มได้
+          const hint = buildHint(pendingScenario, prev.length);
+          return [...prev, hint];
+        });
+      } catch(e) { /* hint error ไม่ crash เกม */ }
+      setScore(s => s + 10);
+      setShowBlockBreak(true);
+      setTimeout(() => setShowBlockBreak(false), 600);
+      // ตอบถูก → รอให้ animation เสร็จก่อนแสดง D-pad (timer เดินต่อ)
+      setTimeout(() => {
+        setWaitingMove(true);
+      }, 500);
+    } else {
+      // ตอบผิด → แสดงว่าผิด 1.2 วิ แล้วเปลี่ยนคำถามใหม่ทันที timer ยังเดินต่อ (ไม่ reset)
+      setShake(true);
+      setTimeout(() => setShake(false), 400);
+
+      setLives(prevLives => {
+        const newLives = prevLives - 1;
+        setTimeout(() => {
+          if (newLives <= 0) {
+            setPathHistory(prevHistory => {
+              const retreat = Math.max(0, prevHistory.length - 1 - RETREAT_ON_DEATH);
+              const newPos = prevHistory[retreat] || { r: 0, c: 0 };
+              setPlayerPos(newPos);
+              return prevHistory.slice(0, retreat + 1);
+            });
+            setLives(START_LIVES);
+          }
+          // เปลี่ยนคำถามใหม่ ไม่ reset เวลา — timer เดินต่อจากที่เหลือ
+          const qId = currentQRef.current?.id;
+          setUsedQIds(prevUsed => {
+            const newUsed = qId ? [...prevUsed, qId] : prevUsed;
+            setCurrentQ(getRandomQ(newUsed));
+            return newUsed;
+          });
+          setSelected(null);
+          setResult(null);
+          // ไม่เรียก setResetTimerTrigger → timer ไม่ reset
+        }, 1200);
+        return newLives;
+      });
+    }
+  }
+
+  function handleMove(dir) {
+    if (!maze) return;
+    const dirMap = {
+      up:    { dr: -1, dc: 0, wall: 0 },
+      right: { dr: 0,  dc: 1, wall: 1 },
+      down:  { dr: 1,  dc: 0, wall: 2 },
+      left:  { dr: 0,  dc: -1, wall: 3 },
+    };
+    const d = dirMap[dir];
+    const cell = maze[playerPos.r]?.[playerPos.c];
+    if (!cell || cell.walls[d.wall]) return; // มีกำแพง ไม่ให้เดิน
+    const next = { r: playerPos.r + d.dr, c: playerPos.c + d.dc };
+    if (next.r < 0 || next.r >= MAZE_ROWS || next.c < 0 || next.c >= MAZE_COLS) return;
+
+    setWaitingMove(false);
+
+    if (isEnd(next)) {
+      setPlayerPos(next);
+      startFinal(hints);
+      return;
+    }
+
+    setPlayerPos(next);
+    setPathHistory(h => {
+      const already = h.some(p => p.r === next.r && p.c === next.c);
+      return already ? h : [...h, next];
+    });
+    setUsedQIds(prevUsed => {
+      const newUsed = [...prevUsed, currentQRef.current?.id].filter(Boolean);
+      setCurrentQ(getRandomQ(newUsed));
+      return newUsed;
+    });
+    setSelected(null);
+    setResult(null);
+    // ตอบถูกแล้วเดิน → เพิ่มเวลา 10 วิ (ไม่เกิน 60)
+    setTimeLeft(prev => Math.min(prev + 10, QUESTION_TIME));
+  }
+
+  function startFinal(collectedHints) {
+    const scenario = pendingScenario || FINAL_SCENARIOS[Math.floor(Math.random() * FINAL_SCENARIOS.length)];
+    setCurrentScenario(scenario);
+    setShuffledSteps(shuffleArr(scenario.steps));
+    setPlacedSteps(Array(scenario.steps.length).fill(null));
+    setFinalResult(null);
+    setWrongSlots([]);
+    setFinalTimeLeft(FINAL_TIME);
+    setScreen("final");
+  }
+
+  function handleDragStart(step) { setDragItem(step); setWrongSlots([]); setFinalResult(null); }
+  function handleDragOver(e, idx) { e.preventDefault(); setDragOver(idx); }
+  function handleDrop(idx) {
+    if (!dragItem) return;
+    const newPlaced = [...placedSteps];
+    const existingIdx = newPlaced.findIndex(s => s?.id === dragItem.id);
+    if (existingIdx !== -1) newPlaced[existingIdx] = null;
+    newPlaced[idx] = dragItem;
+    setPlacedSteps(newPlaced);
+    setDragItem(null);
+    setDragOver(null);
+  }
+
+  function checkFinal() {
+    const wrongIdx = currentScenario.steps
+      .map((step, i) => placedSteps[i]?.id !== step.id ? i : -1)
+      .filter(i => i !== -1);
+    if (wrongIdx.length === 0) {
+      clearInterval(finalTimerRef.current);
+      setWrongSlots([]);
+      setFinalResult("win");
+      const secs = Math.floor((Date.now() - (gameStartTimeRef.current || Date.now())) / 1000);
+      setElapsedTime(secs);
+      setScreen("win");
+    } else {
+      // ไฮไลต์ช่องที่ผิด + ลดเลือด 1
+      setWrongSlots(wrongIdx);
+      setFinalResult("wrong");
+      setLives(prevLives => {
+        const newLives = prevLives - 1;
+        if (newLives <= 0) {
+          // เลือดหมด → ถอยหลัง 3 ช่อง แล้วกลับไป game
+          setPathHistory(prevHistory => {
+            // ถอยหลัง 2 ช่อง
+            const retreat = Math.max(0, prevHistory.length - 1 - 2);
+            const newPos = prevHistory[retreat] || { r: 0, c: 0 };
+            setPlayerPos(newPos);
+            return prevHistory.slice(0, retreat + 1);
+          });
+          setLives(START_LIVES);
+          setTimeout(() => {
+            clearInterval(finalTimerRef.current);
+            setWrongSlots([]);
+            setFinalResult(null);
+            setScreen("game");
+            setUsedQIds(prevUsed => {
+              setCurrentQ(getRandomQ(prevUsed));
+              return prevUsed;
+            });
+            setSelected(null);
+            setResult(null);
+          }, 2000);
+        }
+        return newLives <= 0 ? START_LIVES : newLives;
+      });
+    }
+  }
+
+  function removeFromSlot(idx) {
+    const newPlaced = [...placedSteps];
+    newPlaced[idx] = null;
+    setPlacedSteps(newPlaced);
+    setWrongSlots([]);
+    setFinalResult(null);
+  }
+
+  const availableSteps = shuffledSteps.filter(s => !placedSteps.some(p => p?.id === s.id));
+  const cellSize = Math.floor(Math.min(window.innerWidth - 32, 400) / MAZE_COLS);
+
+  // ── RENDER MAZE ──
+  function renderMaze() {
+    if (!maze) return null;
+    const neighbors = getNeighborCells(playerPos, maze);
+    return (
+      <div style={{ display: "inline-block", border: "4px solid #555", background: "#1a0a0a", position: "relative" }}>
+        {maze.map((row, r) => (
+          <div key={r} style={{ display: "flex" }}>
+            {row.map((cell, c) => {
+              const isPlayer = playerPos.r === r && playerPos.c === c;
+              const isStart = r === 0 && c === 0;
+              const isFinish = r === MAZE_ROWS - 1 && c === MAZE_COLS - 1;
+              const isVisited = pathHistory.some(p => p.r === r && p.c === c);
+              const isNeighbor = !isPlayer && neighbors.some(n => n.r === r && n.c === c);
+              return (
+                <div key={c} style={{
+                  width: cellSize, height: cellSize,
+                  position: "relative",
+                  background: isPlayer ? "#1a3a7a" : isFinish ? "#3a2a00" : isStart ? "#0a2a0a" : isVisited ? "#1a0f06" : "#0d0806",
+                  borderTop: cell.walls[0] ? "3px solid #555" : "3px solid transparent",
+                  borderRight: cell.walls[1] ? "3px solid #555" : "3px solid transparent",
+                  borderBottom: cell.walls[2] ? "3px solid #555" : "3px solid transparent",
+                  borderLeft: cell.walls[3] ? "3px solid #555" : "3px solid transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "background 0.3s",
+                  boxShadow: isPlayer ? "inset 0 0 12px #3366FF88" : isNeighbor ? "inset 0 0 6px #FFD70044" : "none",
+                }}>
+                  {isPlayer && (
+                    <div style={{ animation: "pixelFloat 1.5s infinite" }}>
+                      <Steve size={36} />
+                    </div>
+                  )}
+                  {!isPlayer && isFinish && <span style={{ fontSize: 22 }}>🏆</span>}
+                  {!isPlayer && !isFinish && isStart && <span style={{ fontSize: 14 }}>🚀</span>}
+                  {!isPlayer && !isFinish && !isStart && isVisited && (
+                    <div style={{ width: 6, height: 6, background: "#5D8A3C", borderRadius: 0 }} />
+                  )}
+                  {!isPlayer && isNeighbor && (
+                    <div style={{ width: 8, height: 8, background: "#FFD70066", border: "1px solid #FFD700" }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // ─── SCREENS ─────────────────────────────────────────────────
+  if (screen === "intro") return (
+    <div style={{ minHeight: "100vh", background: "#1a1a2e", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      {/* Stars - using memoized values to prevent re-render flicker */}
+      <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden", pointerEvents: "none" }}>
+        {stars.map((s, i) => (
+          <div key={i} style={{ position: "absolute", left: s.left, top: s.top, width: 3, height: 3, background: "#fff", animation: `starTwinkle ${s.duration} ${s.delay} infinite` }} />
+        ))}
+      </div>
+
+      <div style={{ textAlign: "center", animation: "pixelPop 0.5s ease", maxWidth: 520, position: "relative", zIndex: 1 }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
+          {["M","A","Z","E"].map((l, i) => (
+            <div key={i} style={{ background: "#5D8A3C", border: "3px solid #3a5a20", width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", animation: `pixelFloat ${1 + i * 0.1}s ${i * 0.1}s infinite` }}>
+              <span className="mc-font" style={{ fontSize: 22, color: "#fff", textShadow: "2px 2px #000" }}>{l}</span>
+            </div>
+          ))}
+          <div style={{ width: 10 }} />
+          {["Q","U","I","Z"].map((l, i) => (
+            <div key={i} style={{ background: "#3355AA", border: "3px solid #1a3377", width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", animation: `pixelFloat ${1.2 + i * 0.1}s ${i * 0.1}s infinite` }}>
+              <span className="mc-font" style={{ fontSize: 22, color: "#FFD700", textShadow: "2px 2px #000" }}>{l}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 16 }}>
+          {["C","H","A","R","T"].map((l, i) => (
+            <div key={i} style={{ background: "#AA3355", border: "3px solid #771133", width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", animation: `pixelFloat ${1.4 + i * 0.1}s ${i * 0.1}s infinite` }}>
+              <span className="mc-font" style={{ fontSize: 22, color: "#fff", textShadow: "2px 2px #000" }}>{l}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 24 }}>
+          <div className="pixel-float" style={{ animationDelay: "0s" }}><Steve size={56} /></div>
+          <div className="pixel-float" style={{ animationDelay: "0.5s" }}><Creeper size={48} /></div>
+          <div className="pixel-float" style={{ animationDelay: "0.3s" }}><Steve size={56} /></div>
+        </div>
+
+        <div style={{ background: "#0d0d0d", border: "4px solid #555", padding: 16, marginBottom: 20, textAlign: "left" }}>
+          <div className="mc-font" style={{ fontSize: 22, color: "#FFD700", marginBottom: 12 }}>กติกาการเล่น</div>
+          <div className="mc-font-sm" style={{ fontSize: 20, color: "#fff", lineHeight: 1.8 }}>
+            ❤️ พลังชีวิต <span style={{ color: "#FF4444" }}>3</span> ดวง<br />
+            ✅ ตอบถูก → เลือกทิศทางเดินเขาวงกต<br />
+            💡 สุ่มได้คำใบ้ (สะสมได้สูงสุด <span style={{ color: "#FFD700" }}>8</span> ข้อ)<br />
+            ⏱️ เวลาตอบ <span style={{ color: "#FF4444" }}>60</span> วิ — ตอบถูกเวลารีเซ็ต<br />
+            ⌛ หมดเวลา → ถอยหลัง <span style={{ color: "#FF4444" }}>1</span> ช่อง<br />
+            ❌ ตอบผิด → คำถามใหม่, พลัง −1<br />
+            💀 พลังหมด → ถอยหลัง <span style={{ color: "#FF4444" }}>2</span> ช่อง<br />
+            🏆 ถึงปลายทาง → ด่านสุดท้าย Flowchart!<br />
+            📋 เรียง Flowchart ผิด → ❤️−1 (หมดถอยหลัง <span style={{ color: "#FF4444" }}>2</span> ช่อง)
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+          <div style={{ background: "#333", border: "2px solid #FFD700", padding: "4px 16px" }}>
+            <span className="mc-font-sm" style={{ fontSize: 22, color: "#FFD700" }}>🌍 ความรู้ทั่วไป 100 ข้อ</span>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 24 }}>
+          <button className="mc-btn mc-btn-green" style={{ fontSize: 24, padding: "12px 40px" }} onClick={initGame}>
+            ▶ เริ่มเกม
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (screen === "game") return (
+    <div style={{ minHeight: "100vh", background: "#1a1a2e", padding: 12, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      {/* HUD */}
+      <div style={{ width: "100%", maxWidth: 600, marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div className="mc-font-sm" style={{ fontSize: 20, color: "#aaa" }}>พลังชีวิต</div>
+          <div style={{ display: "flex", gap: 2 }}>
+            {Array.from({ length: START_LIVES }).map((_, i) => <Heart key={i} filled={i < lives} />)}
+          </div>
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <div className="mc-font" style={{ fontSize: 20, color: "#FFD700" }}>SCORE</div>
+          <div className="mc-font-sm" style={{ fontSize: 28, color: "#fff" }}>{score}</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div className="mc-font-sm" style={{ fontSize: 20, color: "#aaa" }}>คำใบ้</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
+            <span style={{ fontSize: 16 }}>💡</span>
+            <span className="mc-font-sm" style={{ fontSize: 22, color: hints.length > 0 ? "#7FFF00" : "#555" }}>{hints.length}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Maze */}
+      <div style={{ marginBottom: 12, position: "relative" }}>
+        {renderMaze()}
+        {showBlockBreak && (
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", fontSize: 32, animation: "blockBreak 0.6s ease forwards", pointerEvents: "none" }}>
+            ⛏️
+          </div>
+        )}
+      </div>
+
+      {/* D-Pad Direction Buttons */}
+      {waitingMove && (
+        <div style={{ marginBottom: 10, textAlign: "center" }}>
+          <div className="mc-font-sm" style={{ fontSize: 20, color: "#7FFF00", marginBottom: 6 }}>
+            ✅ ถูกต้อง! เลือกทิศทางที่จะเดิน
+          </div>
+          {(() => {
+            const cell = maze?.[playerPos.r]?.[playerPos.c];
+            const canUp    = cell && !cell.walls[0] && playerPos.r > 0;
+            const canRight = cell && !cell.walls[1] && playerPos.c < MAZE_COLS - 1;
+            const canDown  = cell && !cell.walls[2] && playerPos.r < MAZE_ROWS - 1;
+            const canLeft  = cell && !cell.walls[3] && playerPos.c > 0;
+            const dpadSize = Math.min(64, Math.floor((window.innerWidth - 48) / 3));
+            const btnStyle = (enabled) => ({
+              width: dpadSize, height: dpadSize,
+              background: enabled ? "#3355AA" : "#222",
+              border: enabled ? "3px solid #7799FF" : "3px solid #444",
+              borderBottom: enabled ? "5px solid #112277" : "5px solid #111",
+              color: enabled ? "#fff" : "#555",
+              fontSize: Math.floor(dpadSize * 0.45),
+              cursor: enabled ? "pointer" : "default",
+              fontFamily: "monospace",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              touchAction: "manipulation",
+            });
+            return (
+              <div style={{ display: "inline-grid", gridTemplateColumns: `${dpadSize}px ${dpadSize}px ${dpadSize}px`, gridTemplateRows: `${dpadSize}px ${dpadSize}px ${dpadSize}px`, gap: 4 }}>
+                <div />
+                <button style={btnStyle(canUp)}    onClick={() => canUp    && handleMove("up")}>▲</button>
+                <div />
+                <button style={btnStyle(canLeft)}  onClick={() => canLeft  && handleMove("left")}>◀</button>
+                <div style={{ background: "#1a1a2e", border: "3px solid #333", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Steve size={28} />
+                </div>
+                <button style={btnStyle(canRight)} onClick={() => canRight && handleMove("right")}>▶</button>
+                <div />
+                <button style={btnStyle(canDown)}  onClick={() => canDown  && handleMove("down")}>▼</button>
+                <div />
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Legend */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
+        {[["🧑‍💻","ผู้เล่น"],["🚀","เริ่ม"],["🏆","ออก"],["🟩","เส้นทาง"]].map(([icon, label], i) => (
+          <div key={i} className="mc-font-sm" style={{ fontSize: 14, color: "#888", display: "flex", alignItems: "center", gap: 4 }}>
+            <span>{icon}</span>{label}
+          </div>
+        ))}
+      </div>
+
+      {/* Question Card - ซ่อนตอนรอเลือกทิศ */}
+      {currentQ && !waitingMove && (
+        <div className={shake ? "pixel-shake" : ""} style={{ width: "100%", maxWidth: 600, background: "#111", border: "4px solid #555", padding: 14 }}>
+          {/* Timer bar */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <span className="mc-font-sm" style={{ fontSize: 20, color: timeLeft <= 10 ? "#FF4444" : timeLeft <= 30 ? "#FFD700" : "#7FFF00" }}>⏱️ {timeLeft} วินาที</span>
+              <span className="mc-font-sm" style={{ fontSize: 18, color: "#888" }}>{Math.round(timeLeft / QUESTION_TIME * 100)}%</span>
+            </div>
+            <div style={{ width: "100%", height: 8, background: "#333", border: "1px solid #555" }}>
+              <div style={{
+                width: `${(timeLeft / QUESTION_TIME) * 100}%`,
+                height: "100%",
+                background: timeLeft <= 10 ? "#FF4444" : timeLeft <= 30 ? "#FFD700" : "#5D8A3C",
+                transition: "width 1s linear, background 0.5s",
+              }} />
+            </div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <span style={{ background: "#333", border: "2px solid #666", padding: "2px 8px" }}>
+                <span className="mc-font-sm" style={{ fontSize: 22, color: "#FFD700" }}>{currentQ.cat}</span>
+              </span>
+
+            </div>
+            <span className="mc-font-sm" style={{ fontSize: 20, color: "#888" }}>ตำแหน่ง ({playerPos.r},{playerPos.c})</span>
+          </div>
+          <div className="mc-font-sm" style={{ fontSize: 24, color: "#fff", marginBottom: 12, lineHeight: 1.5 }}>
+            {currentQ.q}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {currentQ.choices.map((ch, i) => {
+              let cls = "choice-btn choice-btn-default";
+              if (selected !== null) {
+                if (i === currentQ.ans) cls = "choice-btn choice-btn-correct";
+                else if (i === selected) cls = "choice-btn choice-btn-wrong";
+                else cls = "choice-btn choice-btn-dim";
+              }
+              return (
+                <button key={i} className={cls} onClick={() => handleAnswer(i)} disabled={selected !== null}>
+                  {["A","B","C","D"][i]}) {ch}
+                </button>
+              );
+            })}
+          </div>
+          {result && (
+            <div className="mc-font-sm" style={{ fontSize: 22, marginTop: 10, color: result === "correct" ? "#7FFF00" : "#FF4444", textAlign: "center" }}>
+              {result === "correct"
+                ? `✅ ถูกต้อง! +10 คะแนน`
+                : `❌ ผิด! คำตอบคือ: ${currentQ.choices[currentQ.ans]}`}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Hints inventory */}
+      {hints.length > 0 && !waitingMove && (
+        <div style={{ width: "100%", maxWidth: 600, marginTop: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 4 }}>
+            <div className="mc-font" style={{ fontSize: 20, color: "#FFD700" }}>💡 คำใบ้ด่านสุดท้าย</div>
+            {pendingScenario && (
+              <div style={{ background: "#1a1a00", border: "1px solid #666600", padding: "2px 8px" }}>
+                <span className="mc-font-sm" style={{ fontSize: 18, color: "#CCCC00" }}>🎯 {pendingScenario.topic}</span>
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {hints.map((h, i) => (
+              <div key={i} style={{ background: "#0d2b0d", border: "2px solid #3a6a3a", padding: "4px 10px", display: "flex", alignItems: "center", gap: 8 }}>
+                <span className="mc-font-sm" style={{ fontSize: 16, color: "#445544", minWidth: 20 }}>#{i+1}</span>
+                <span className="mc-font-sm" style={{ fontSize: 19, color: "#7FFF00" }}>{h}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <button className="mc-btn mc-btn-red" style={{ marginTop: 16, fontSize: 22 }} onClick={() => setScreen("intro")}>
+        ◀ เมนูหลัก
+      </button>
+    </div>
+  );
+
+  if (screen === "final") return (
+    <div style={{ minHeight: "100vh", background: "#0d0d1a", padding: 12, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ width: "100%", maxWidth: 660 }}>
+        <div style={{ textAlign: "center", marginBottom: 12 }}>
+          <div className="mc-font" style={{ fontSize: 28, color: "#FFD700", textShadow: "2px 2px #000" }}>⚔️ FINAL STAGE ⚔️</div>
+          <div className="mc-font-sm" style={{ fontSize: 22, color: "#aaa", marginTop: 4 }}>โจทย์: {currentScenario?.topic}</div>
+          {/* Final Timer Bar */}
+          <div style={{ marginTop: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <span className="mc-font-sm" style={{ fontSize: 20, color: finalTimeLeft <= 10 ? "#FF4444" : finalTimeLeft <= 20 ? "#FFD700" : "#7FFF00" }}>
+                ⏱️ {finalTimeLeft} วินาที
+              </span>
+              <div style={{ display: "flex", gap: 3 }}>
+                {Array.from({ length: START_LIVES }).map((_, i) => <Heart key={i} filled={i < lives} />)}
+              </div>
+            </div>
+            <div style={{ width: "100%", height: 10, background: "#333", border: "1px solid #555" }}>
+              <div style={{
+                width: `${(finalTimeLeft / FINAL_TIME) * 100}%`,
+                height: "100%",
+                background: finalTimeLeft <= 10 ? "#FF4444" : finalTimeLeft <= 20 ? "#FFD700" : "#5D8A3C",
+                transition: "width 1s linear, background 0.5s",
+              }} />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ background: "#111", border: "3px solid #555", padding: 12, marginBottom: 12 }}>
+          <div className="mc-font-sm" style={{ fontSize: 22, color: "#FFD700", marginBottom: 6 }}>📋 วิธีการ</div>
+          <div className="mc-font-sm" style={{ fontSize: 20, color: "#ccc", lineHeight: 1.9 }}>
+            🖱️ <span style={{color:"#FFD700"}}>ลาก</span> ขั้นตอนจากซ้ายไปวางใน Flowchart ขวา<br />
+            🗑️ <span style={{color:"#FFD700"}}>คลิก</span> ที่ช่องที่วางแล้ว เพื่อ<span style={{color:"#FF6666"}}>ลบ</span>ออก<br />
+            🔄 <span style={{color:"#FFD700"}}>ลากทับ</span> ช่องที่ต้องการ เพื่อ<span style={{color:"#7FFF00"}}>เปลี่ยน</span>ขั้นตอน<br />
+            ✅ กดตรวจสอบ เมื่อเรียงครบทุกช่องแล้ว
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", flexDirection: window.innerWidth < 500 ? "column" : "row" }}>
+          {/* Available steps */}
+          <div style={{ flex: "1 1 200px", minWidth: 180 }}>
+            <div className="mc-font" style={{ fontSize: 20, color: "#aaa", marginBottom: 8 }}>ขั้นตอนที่มี</div>
+            {availableSteps.map(step => (
+              <div
+                key={step.id}
+                className="flow-step"
+                draggable
+                onDragStart={() => handleDragStart(step)}
+                style={{ borderColor: step.type === "start" ? "#7FFF00" : step.type === "end" ? "#FF4444" : step.type === "decision" ? "#FFD700" : "#4488FF" }}
+              >
+                <span style={{ fontSize: 18 }}>{step.type === "start" ? "🟢" : step.type === "end" ? "🔴" : step.type === "decision" ? "🔶" : "🔷"}</span>
+                <span className="mc-font-sm" style={{ fontSize: 20 }}>{step.label}</span>
+              </div>
+            ))}
+            {availableSteps.length === 0 && (
+              <div className="mc-font-sm" style={{ fontSize: 20, color: "#555", padding: 8 }}>ใช้หมดแล้ว ✓</div>
+            )}
+          </div>
+
+          {/* Flowchart slots */}
+          <div style={{ flex: "1 1 200px", minWidth: 200 }}>
+            <div className="mc-font" style={{ fontSize: 20, color: "#aaa", marginBottom: 8 }}>Flowchart</div>
+            {placedSteps.map((step, i) => {
+              const isWrong = wrongSlots.includes(i);
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <div
+                    className={`flow-slot ${dragOver === i ? "drag-over" : ""} ${step ? "filled" : ""}`}
+                    style={{
+                      flex: 1,
+                      ...(isWrong ? {
+                        background: "#3a0a0a",
+                        borderColor: "#FF4444",
+                        borderStyle: "solid",
+                        animation: "pixelPop 0.3s ease",
+                      } : {}),
+                    }}
+                    onDragOver={e => handleDragOver(e, i)}
+                    onDrop={() => handleDrop(i)}
+                    onClick={() => step && removeFromSlot(i)}
+                  >
+                    {step ? (
+                      <>
+                        <span style={{ fontSize: 18 }}>{step.type === "start" ? "🟢" : step.type === "end" ? "🔴" : step.type === "decision" ? "🔶" : "🔷"}</span>
+                        <span className="mc-font-sm" style={{ fontSize: 20, color: isWrong ? "#FF6666" : undefined }}>{step.label}</span>
+                        {isWrong && <span style={{ marginLeft: "auto", fontSize: 16 }}>❌</span>}
+                      </>
+                    ) : (
+                      <span className="mc-font-sm" style={{ fontSize: 20 }}>ขั้นที่ {i + 1}...</span>
+                    )}
+                  </div>
+                  {i < placedSteps.length - 1 && (
+                    <div className="mc-font-sm" style={{ fontSize: 22, color: "#555", transform: "rotate(90deg)" }}>↓</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Hints Panel */}
+        <div style={{ background: "#0d2b0d", border: "3px solid #3a6a3a", padding: 0, marginTop: 12, overflow: "hidden" }}>
+          {/* Header */}
+          <div style={{ background: "#164716", padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="mc-font-sm" style={{ fontSize: 21, color: "#FFD700" }}>
+              💡 คำใบ้ช่วยเรียง Flowchart
+            </div>
+            <div style={{ background: "#0d2b0d", border: "1px solid #3a6a3a", padding: "2px 10px" }}>
+              <span className="mc-font-sm" style={{ fontSize: 18, color: hints.length > 0 ? "#7FFF00" : "#556655" }}>
+                {hints.length} ใบ้ที่สะสม
+              </span>
+            </div>
+          </div>
+          <div style={{ padding: "10px 12px" }}>
+            {hints.length === 0 ? (
+              <div className="mc-font-sm" style={{ fontSize: 20, color: "#556655", textAlign: "center", padding: "8px 0" }}>
+                😔 ยังไม่มีคำใบ้ — กลับไปตอบถูกในเขาวงกตเพื่อรับคำใบ้
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                {hints.map((h, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "#071407", border: "1px solid #3a5a3a", padding: "7px 10px" }}>
+                    <span className="mc-font-sm" style={{ fontSize: 16, color: "#FFD700", minWidth: 22, paddingTop: 1 }}>#{i+1}</span>
+                    <span className="mc-font-sm" style={{ fontSize: 19, color: "#7FFF00", lineHeight: 1.5 }}>{h}</span>
+                  </div>
+                ))}
+                <div className="mc-font-sm" style={{ fontSize: 17, color: "#445544", marginTop: 4 }}>
+                  📌 ใช้คำใบ้ข้างต้นเพื่อหาลำดับที่ถูกต้องในช่อง Flowchart
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {finalResult === "wrong" && (
+          <div style={{ marginTop: 10, background: "#2a0a0a", border: "2px solid #FF4444", padding: "10px 14px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 6 }}>
+              <div className="mc-font-sm" style={{ fontSize: 22, color: "#FF4444" }}>
+                ❌ เรียงผิด {wrongSlots.length} ช่อง!
+              </div>
+              <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+                {Array.from({ length: START_LIVES }).map((_, i) => (
+                  <Heart key={i} filled={i < lives} />
+                ))}
+              </div>
+            </div>
+            {lives <= 0 ? (
+              <div className="mc-font-sm" style={{ fontSize: 20, color: "#FF4444" }}>
+                💀 เลือดหมด! กำลังถอยหลัง 2 ช่อง...
+              </div>
+            ) : (
+              <div style={{ borderTop: "1px solid #553333", paddingTop: 8 }}>
+                <div className="mc-font-sm" style={{ fontSize: 19, color: "#FFB0B0", lineHeight: 1.8 }}>
+                  🗑️ <span style={{color:"#FFD700"}}>คลิก</span> ช่องสีแดง → ลบออก แล้วลากขั้นตอนใหม่มาใส่<br />
+                  🔄 หรือ <span style={{color:"#FFD700"}}>ลากขั้นตอน</span>ใหม่ <span style={{color:"#FFD700"}}>ทับ</span> ช่องสีแดงได้เลย<br />
+                  ⚠️ ระวัง! ตอบผิดอีก เลือด −1 หมดแล้วถอยหลัง 2 ช่อง
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 8, marginTop: 14, justifyContent: "center" }}>
+          <button
+            className="mc-btn mc-btn-gold"
+            style={{ fontSize: 22 }}
+            onClick={checkFinal}
+            disabled={placedSteps.some(s => s === null)}
+          >
+            ✅ ตรวจสอบ Flowchart
+          </button>
+          <button className="mc-btn mc-btn-red" style={{ fontSize: 22 }} onClick={() => setPlacedSteps(Array(currentScenario.steps.length).fill(null))}>
+            🔄 ล้างทั้งหมด
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (screen === "win") return (
+    <div style={{ minHeight: "100vh", background: "#0a1a0a", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ textAlign: "center", animation: "pixelPop 0.5s ease" }}>
+        <div style={{ fontSize: 72, marginBottom: 8 }}>🏆</div>
+        <div className="mc-font" style={{ fontSize: 36, color: "#FFD700", textShadow: "3px 3px #000", marginBottom: 8 }}>YOU WIN!</div>
+        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 16 }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} style={{ animation: `pixelFloat ${0.5 + i * 0.1}s infinite` }}>
+              <Steve size={40} />
+            </div>
+          ))}
+        </div>
+        <div style={{ background: "#111", border: "4px solid #FFD700", padding: 16, marginBottom: 16 }}>
+          <div className="mc-font-sm" style={{ fontSize: 24, color: "#7FFF00" }}>
+            🌟 คะแนนสุดท้าย: {score + 50}<br />
+            ⏱️ เวลาที่ใช้: {Math.floor(elapsedTime/60) > 0 ? `${Math.floor(elapsedTime/60)} นาที ` : ""}{elapsedTime % 60} วินาที<br />
+            💡 คำใบ้ที่สะสม: {hints.length} ข้อ<br />
+            ✅ Flowchart สำเร็จ!
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+          <button className="mc-btn mc-btn-green" style={{ fontSize: 22 }} onClick={initGame}>▶ เล่นอีกครั้ง</button>
+          <button className="mc-btn mc-btn-blue" style={{ fontSize: 22 }} onClick={() => setScreen("intro")}>◀ เมนูหลัก</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<MinecraftMazeGame />);
+</script>
+</body>
+</html>
